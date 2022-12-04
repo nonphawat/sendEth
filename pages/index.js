@@ -1,8 +1,81 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+
+import styles from "../styles/Home.module.css";
+import { useEffect, useState, useRef } from "react";
+import main from "../back-end/sendEth";
+import Web3Modal from "web3modal";
+import { ethers } from "ethers";
+
+import data from "../back-end/hisTx";
+// import WalletConnectProvider from "@walletconnect/ethereum-provider";
 
 export default function Home() {
+  
+  const send = async () =>{
+     main(account)
+    setSay("Wait for 10 second and see your wallet")
+    
+  }
+
+  const readData = async () => {
+    // const contract = test();
+    // const message =await contract.methods.get().call()
+    const dataTx = await data();
+    console.log(dataTx);
+  };
+  const [sayShow,setSay] = useState("");
+  
+  const [provider, setProvider] = useState();
+  const [library, setLibrary] = useState();
+  const [account, setAccount] = useState("");
+  const [show, setShow] = useState(true);
+
+  const connectWallet = async () => {
+    try {
+      let web3Modal = new Web3Modal({
+        cacheProvider: false,
+      });
+      const provider = await web3Modal.connect();
+      const library = new ethers.providers.Web3Provider(provider);
+      const accounts = await library.listAccounts();
+
+      setProvider(provider);
+      setLibrary(library);
+      if (accounts) setAccount(accounts[0]);
+    } catch (error) {
+      console.log("Error");
+    }
+    console.log(account);
+  };
+
+  useEffect(()=>{
+    console.log("TEST");
+
+  },[sayShow])
+
+  useEffect(() => {
+    if (account != "") {
+      setShow(false)
+    }
+  }, [account]);
+
+  useEffect(() => {
+    if (provider?.on) {
+      const handleAccountsChanged = (accounts) => {
+        console.log("accountsChanged", accounts);
+        if (accounts) setAccount(accounts[0]);
+      };
+
+      provider.on("accountsChanged", handleAccountsChanged);
+
+      return () => {
+        if (provider.removeListener) {
+          provider.removeListener("accountsChanged", handleAccountsChanged);
+        }
+      };
+    }
+  }, [provider]);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -13,57 +86,26 @@ export default function Home() {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Faucet ETH GOERLI Testnet
         </h1>
+        Send 0.005eth per round
+        
+        {show ? (
+          <button onClick={connectWallet}>Connect wellet</button>
+        ) : (
+          <>
+            <h4>Your wallet address: {account}</h4>
+            {/* <input ref={inputRef} type="text" id="message" name="message" /> */}
+            <button onClick={send}>Send Me</button>
+            <h4>{sayShow}</h4>
+          </>
+        
+        )}
+        
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <div className={styles.grid}></div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
-  )
+  );
 }
+
